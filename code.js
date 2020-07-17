@@ -202,6 +202,8 @@ const gameOver = () => {
 const repeatedTip = (tip) => {
     if (!tipUsed.includes(tip) && game.status === "playing") {
         tipUsed.push(tip)
+    } else {
+        displayMessage.textContent = "you already used your tip for this word"
     }
 }
 
