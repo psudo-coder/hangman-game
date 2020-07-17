@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hangman</title>
+    <style>
+        body {
+            font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+            font-size: 2em;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #title {
+            font-family: monospace, monospace;
+            font-size: 1.4em;
+            height: 1em;
+            font-weight: 500;
+            padding: 0.5em 0;
+        }
+
+        #word {
+            font-family: monospace, monospace;
+            height: 4em;
+            font-size: 1em;
+            font-weight: 300;
+            padding: 0.5em 0.25em;
+        }
+
+        #message {
+            height: 2em;
+            padding: 0.5em 0.25em;
+            font-size: 0.5em;
+        }
+
+        #guesses {
+            height: 3em;
+            padding: 0.5em 0.25em;
+            font-size: 0.75em;
+        }
+
+        #guessesLeft {
+            height: 4em;
+            padding: 0.5em 0.25em;
+            font-size: 0.75em;
+        }
+
+        .myButton {
+            background-color: #cccccc;
+            border-radius: 28px;
+            border: 1px solid #dcdcdc;
+            display: inline-block;
+            cursor: pointer;
+            color: #3d3d3d;
+            font-family: Arial;
+            font-size: 17px;
+            padding: 16px 31px;
+            text-decoration: none;
+            text-shadow: 0px 1px 0px #ffffff;
+        }
+
+        .myButton:hover {
+            background-color: #bfbfbf;
+        }
+
+        .myButton:active {
+            position: relative;
+            top: 1px;
+        }
+
+        .blink {
+            animation: blinker 1s step-start infinite;
+        }
+
+        @keyframes blinker {
+            50% {
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="title">Hangman</div>
+    <div id="guessesLeft"></div>
+    <div id="word"></div>
+    <div id="message"></div>
+    <div id="guesses"></div>
+    <a class="myButton"></a>
+    <script>
+        // Variables
+        let wordList = []
+        const abc = ["a", "b", "c",
+            "d", "e", "f", "g", "h", "i",
+            "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"
+        ]
+        const displayWord = document.querySelector("#word")
+        const displayMessage = document.querySelector("#message")
+        const displayGuesses = document.querySelector("#guesses")
+        const displayGuessesLeft = document.querySelector("#guessesLeft")
+        const displayTips = document.querySelector("#tips")
+        const tipButton = document.querySelector("a")
+        let game
+        let correctGuess = []
+        let tipUsed = []
+
+        // Hangman
+        class Hangman {
+            constructor(word, guesses, tip) {
+                this.word = word.split("")
+                this.finalWord = ""
+                this.guesses = guesses
+                this.tip = tip
+                this.guessedLetters = []
+                this.status = "playing"
+            }
+            renderWord() {
+                let newWord = ""
+                let finalWord = ""
+                this.word.forEach(letter => {
+                    if (this.guessedLetters.includes(letter) || letter === " ") {
+                        finalWord += letter
+                        newWord += `${letter} `
+                    } else {
+                        finalWord += "_"
+                        newWord += "_ "
+                    }
+                })
+                this.finalWord = finalWord
+                displayWord.textContent = newWord
+            }
+            gameStatus() {
+                if (this.guesses === 0) {
+                    displayMessage.innerHTML = ""
+                    displayGuessesLeft.innerHTML = ""
+                    displayGuesses.innerHTML = ""
+                    displayMessage.textContent =
+                        `You've failed, the correct word was "${this.word.join("").toUpperCase()}"`
+                    this.status = "failed"
+                } else if (this.word.join("") === this.finalWord) {
+                    displayMessage.innerHTML = ""
+                    displayGuessesLeft.innerHTML = ""
+                    displayGuesses.innerHTML = ""
+                    displayMessage.textContent = `You've guessed the word! Contratulations!`
+                    guessedWords(this.word.join(""))
+                    this.status = "finished"
+                } else {
+                    this.status = "playing"
+                }
+                this.newGame()
+            }
+            guessesLeft() {
+                displayGuessesLeft.innerHTML = ""
+                const p = document.createElement("p")
+                if (this.guesses > 1) {
+                    p.textContent = `You have ${this.guesses} guesses left`
+                } else {
+                    p.textContent = `You have ${this.guesses} guess left`
+                }
+                displayGuessesLeft.appendChild(p)
+            }
+            makingGuess(letter) {
+                if (this.status !== "playing") {} else {
+                    if (typeof letter !== "string" || letter.length !== 1 || !abc.includes(letter)) {
+                        displayMessage.innerHTML = ""
+                        displayMessage.textContent = `Use a single letter for your guess`
+                    } else {
+                        displayMessage.innerHTML = ""
+                        if (!this.guessedLetters.includes(letter) && letter !== undefined) {
+                            this.guessedLetters.push(letter)
+                            const letterGuessed = document.createElement("span")
+                            letterGuessed.textContent = `${letter.toUpperCase()}  `
+                            displayGuesses.appendChild(letterGuessed)
+                            if (!this.word.includes(letter) && this.guesses > 0) {
+                                this.guesses--
+                                this.guessesLeft()
+                            }
+                        } else {
+                            displayMessage.textContent =
+                                `The letter "${letter.toUpperCase()}" has already been used, please try another letter`
+                        }
+                    }
+                }
+            }
+            newGame() {
+                if (this.status !== "playing") {
+                    displayGuesses.innerHTML = ""
+                    displayGuesses.textContent = `press the spacebar to play again`
+                    displayGuessesLeft.textContent = `press the spacebar to play again`
+                    window.addEventListener("keydown", (e) => {
+                        if (e.code === "Space" && game.status !== "playing") {
+                            resetGame()
+                        }
+                    })
+                }
+            }
+        }
+
+        // Word List Array
+        const word = (word, guesses, tip) => {
+            wordList.push({
+                word: word,
+                guesses: guesses,
+                tip: tip,
+            })
+        }
+
+        const saveGame = function (list) {
+            localStorage.setItem("game", JSON.stringify(list))
+        }
+
+        // Start Message
+        const startMessage = () => {
+            const newDiv = document.createElement("div")
+            newDiv.classList.add("blink")
+            newDiv.textContent = `type your guess on the keyboard to start the game`
+            displayMessage.appendChild(newDiv)
+        }
+
+        // Game
+        const getGame = function () {
+            const gameJSON = localStorage.getItem("game")
+            wordList = JSON.parse(gameJSON)
+            if (wordList.length > 0) {
+                const newGameObject = wordList[0]
+                const newGame = new Hangman(newGameObject.word, newGameObject.guesses, newGameObject.tip)
+                return newGame
+            } else {
+                gameOver()
+            }
+        }
+
+        const renderGame = () => {
+            tipDisplay()
+            game = getGame()
+            game.renderWord()
+            game.guessesLeft()
+        }
+
+        const resetGame = () => {
+            displayWord.innerHTML = ""
+            displayGuesses.innerHTML = ""
+            displayGuessesLeft.innerHTML = ""
+            displayMessage.innerHTML = ""
+            wordList.shift()
+            saveGame(wordList)
+            tipDisplay()
+            renderGame()
+        }
+
+        // Game Over
+        const finalMessage = (guessedWords, numberOfTips) => {
+            let finalMessage = ""
+            let messageOne = () => {
+                let messageOne = ""
+                if (guessedWords.length === 1) {
+                    messageOne = `You only guessed one word `
+                } else {
+                    messageOne = `You guessed ${guessedWords.length} words `
+                }
+                return messageOne
+            }
+            let messageTwo = () => {
+                let messageTwo = ""
+                if (numberOfTips.length === 0) {
+                    messageTwo = `and you didn't use any tip!`
+                } else if (numberOfTips.length === 1) {
+                    messageTwo = `and you only used the tip button once!`
+                } else {
+                    messageTwo = `and you used the tip button ${numberOfTips.length} times!`
+                }
+                return messageTwo
+            }
+            if (guessedWords.length === 0) {
+                finalMessage = `Too bad, you haven't guessed any of the words...`
+            } else {
+                finalMessage = messageOne() + messageTwo()
+            }
+            return finalMessage
+        }
+
+        const gameOver = () => {
+            displayWord.innerHTML = ""
+            displayWord.textContent = "G A M E  O V E R"
+            displayGuesses.innerHTML = ""
+            displayGuessesLeft.innerHTML = ""
+            displayMessage.innerHTML = ""
+            displayMessage.textContent = finalMessage(correctGuess, tipUsed)
+            displayGuesses.textContent = "thanks for playing!"
+            tipButton.style.display = "none";
+        }
+
+        // Counting valid unique tips
+        const repeatedTip = (tip) => {
+            if (!tipUsed.includes(tip) && game.status === "playing") {
+                tipUsed.push(tip)
+            }
+        }
+
+        const tipCounter = () => {
+            return 5 - tipUsed.length
+        }
+
+        const tipDisplay = () => {
+            if (tipCounter() > 1) {
+                tipButton.innerHTML = `${tipCounter()} &nbsp T I P S &nbsp L E F T`
+            } else if (tipCounter() === 1) {
+                tipButton.innerHTML = `${tipCounter()} &nbsp T I P &nbsp L E F T`
+            } else {
+                tipButton.innerHTML = `N O &nbsp T I P S &nbsp L E F T`
+            }
+        }
+
+        // Counting valid and unique guesses
+        const guessedWords = (word) => {
+            if (!correctGuess.includes(word)) {
+                correctGuess.push(word)
+            }
+        }
+
+        // Tip Button
+        tipButton.addEventListener("click", e => {
+            if (tipCounter() > 0) {
+                let newTip = ""
+                game.tip.toUpperCase().split("").forEach(letter => {
+                    newTip += `${letter} `
+                })
+                repeatedTip(newTip)
+                e.target.textContent = newTip
+            }
+        })
+        // Game Words
+        word("sunshine", 5, "bright")
+        word("tower", 3, "tall")
+        word("kalimba", 4, "instrument")
+        word("hexagon", 5, "geometry")
+        word("wrestling", 6, "sport")
+        word("sombrero", 5, "hat")
+        word("unconscious", 6, "blackout")
+        word("watermelon", 6, "fruit")
+        word("calculator", 5, "math")
+        word("ancient", 4, "old")
+        // Game
+        saveGame(wordList)
+        startMessage()
+        renderGame()
+        if (game.status === "playing") {
+            window.addEventListener("keydown", (e) => {
+                game.makingGuess(e.key.toLowerCase())
+                game.renderWord()
+                game.gameStatus()
+            })
+        }
+    </script>
+</body>
+
+</html>
