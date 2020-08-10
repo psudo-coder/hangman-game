@@ -196,6 +196,11 @@ const gameOver = () => {
     displayMessage.textContent = finalMessage(correctGuess, tipUsed)
     displayGuesses.textContent = "thanks for playing!"
     tipButton.style.display = "none";
+    window.addEventListener("keydown", (e) => {
+        if (e.code === "Space") {
+            location.assign(`./index.html`)
+        }
+    })
 }
 
 // Counting valid unique tips
